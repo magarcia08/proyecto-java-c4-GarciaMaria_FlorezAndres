@@ -1,0 +1,4 @@
+# Ignore NetBeans build output and private project settings
+build/
+nbproject/private/
+*.class
