@@ -1,62 +1,198 @@
-# Proyecto Tecnostore
+# 📱 TecnoStore — Sistema de Venta de Celulares
 
-Este repositorio contiene la aplicación Java de Tecnostore.
+Sistema de consola desarrollado en Java para gestionar el catálogo de celulares, clientes, ventas y reportes de la tienda TecnoStore. Aplica principios de Programación Orientada a Objetos, patrones de diseño, persistencia con JDBC y procesamiento funcional con Stream API.
 
-## Qué hace este proyecto
+---
 
-La aplicación administra clientes, celulares y ventas, y se conecta a una base de datos MySQL a través de `src/tecnostore/db/ConexionDB.java`.
+## 📋 Descripción del proyecto
 
-## Configuración de la base de datos
+TecnoStore es una tienda minorista que necesitaba automatizar su control de ventas, inventario y clientes, reemplazando el manejo manual en hojas de cálculo. Este sistema permite:
 
-La conexión se configura mediante variables de entorno. No se deben guardar credenciales en el código.
+- Gestionar el catálogo de celulares por gama (Alta, Media, Baja)
+- Registrar y administrar clientes con validaciones
+- Procesar ventas con cálculo automático de IVA del 19%
+- Generar reportes de stock bajo, celulares más vendidos y ventas por mes
+- Exportar un resumen de ventas en archivo de texto
 
-Variables necesarias:
+---
 
-- `DB_URL`
-- `DB_USER`
-- `DB_PASSWORD`
+## 🗂️ Estructura de clases
 
-Ejemplo para PowerShell:
-
-```powershell
-$env:DB_URL = "jdbc:mysql://mysql-<host>:<port>/<database>?ssl-mode=REQUIRED"
-$env:DB_USER = "avnadmin"
-$env:DB_PASSWORD = "tu_contraseña"
+```
+proyecto-java-tecnostore/
+│
+├── src/
+│   └── tecnostore/
+│       ├── model/
+│       │   ├── CategoriaGama.java       # Enum: ALTA, MEDIA, BAJA
+│       │   ├── Celular.java             # Entidad celular
+│       │   ├── Cliente.java             # Entidad cliente
+│       │   ├── DetalleVenta.java        # Línea de detalle por venta
+│       │   └── Venta.java               # Cabecera de venta con IVA
+│       │
+│       ├── controller/
+│       │   ├── CelularController.java   # Reglas de negocio de celulares
+│       │   ├── ClienteController.java   # Reglas de negocio de clientes
+│       │   └── VentaController.java     # Reglas de negocio de ventas
+│       │
+│       ├── dao/
+│       │   ├── CelularDAO.java          # CRUD celulares en BD
+│       │   ├── ClienteDAO.java          # CRUD clientes en BD
+│       │   └── VentaDAO.java            # CRUD ventas y detalles en BD
+│       │
+│       ├── db/
+│       │   └── ConexionDB.java          # Singleton de conexión MySQL
+│       │
+│       ├── view/
+│       │   ├── MenuPrincipal.java       # Menú raíz del sistema
+│       │   ├── MenuCelulares.java       # Submenú gestión celulares
+│       │   ├── MenuClientes.java        # Submenú gestión clientes
+│       │   └── MenuVentas.java          # Submenú ventas y reportes
+│       │
+│       ├── utils/
+│       │   ├── Validador.java           # Validaciones reutilizables
+│       │   ├── ArchivoUtils.java        # Generación del archivo .txt
+│       │   ├── ReporteUtils.java        # Reportes con Stream API
+│       │   └── CelularFactory.java      # Patrón Factory para celulares
+│       │
+│       ├── reportes/
+│       │   └── reporte_ventas.txt       # Generado automáticamente
+│       │
+│       └── Main.java                    # Punto de entrada
+│
+└── tecnostore_db.sql                    # Script de creación de BD
 ```
 
-Ejemplo para CMD:
+---
 
-```cmd
-set DB_URL=jdbc:mysql://mysql-<host>:<port>/<database>?ssl-mode=REQUIRED
-set DB_USER=avnadmin
-set DB_PASSWORD=tu_contraseña
+## 🎨 Patrones de diseño implementados
+
+### Factory Method — `CelularFactory`
+Centraliza la creación de objetos `Celular` según el tipo ingresado. La vista no necesita conocer los detalles de construcción.
+
+```java
+Celular celular = CelularFactory.crearCelular("IOS", 0, "Apple", "iPhone 14", 4200000, 8);
 ```
 
-## Uso local con `.env`
+### Singleton — `ConexionDB`
+Garantiza que solo exista una conexión activa a la base de datos durante toda la ejecución del sistema.
 
-Si usas un entorno que soporta archivos `.env`, puedes copiar el archivo de ejemplo y ajustar tus datos localmente:
-
-```powershell
-Copy-Item .env.example .env
+```java
+Connection conn = ConexionDB.getInstancia().getConnection();
 ```
 
-No subas el archivo `.env` al repositorio.
+---
 
-## Qué se ignora en Git
+## 🧱 Principios SOLID aplicados
 
-Se excluyen los archivos de compilación, los settings privados de NetBeans y el archivo `.env`:
+| Principio | Dónde |
+|---|---|
+| Single Responsibility | Cada clase tiene una única responsabilidad (model, dao, controller, view separados) |
+| Open/Closed | `CelularFactory` puede extenderse con nuevos tipos sin modificar el código existente |
+| Dependency Inversion | Los controllers dependen de DAOs, no de la BD directamente |
 
-```gitignore
-build/
-nbproject/private/
-*.class
-.env
+---
+
+## 🗄️ Base de datos
+
+### Tablas
+
+```sql
+celulares     (id, marca, modelo, sistema_operativo, gama, precio, stock)
+clientes      (id, nombre, identificacion, correo, telefono)
+ventas        (id, id_cliente, fecha, total)
+detalle_ventas(id, id_venta, id_celular, cantidad, subtotal)
 ```
 
-## Cómo ejecutar
+### Relaciones
 
-Abre el proyecto en NetBeans o usa Ant según tu flujo de trabajo. Antes de iniciar la aplicación, asegúrate de haber configurado las variables de entorno.
+- `ventas.id_cliente` → `clientes.id` (RESTRICT al eliminar, CASCADE al actualizar)
+- `detalle_ventas.id_venta` → `ventas.id` (CASCADE al eliminar y actualizar)
+- `detalle_ventas.id_celular` → `celulares.id` (RESTRICT al eliminar, CASCADE al actualizar)
 
-## Nota
+---
 
-Si necesitas ayuda para configurar las variables de entorno o para ejecutar el proyecto, dime y te apoyo con los pasos concretos.
+## ⚙️ Configuración de conexión MySQL
+
+Abre `src/tecnostore/db/ConexionDB.java` y ajusta los siguientes valores:
+
+```java
+private static final String URL = "jdbc:mysql://localhost:3306/tecnostore_db";
+private static final String USER = "root";
+private static final String PASSWORD = "tu_contraseña";
+```
+
+Si usas una base de datos en la nube como Aiven:
+
+```java
+private static final String URL = "jdbc:mysql://host:puerto/tecnostore_db?ssl-mode=REQUIRED";
+private static final String USER = "usuario";
+private static final String PASSWORD = "contraseña";
+```
+
+---
+
+## ▶️ Ejemplo de ejecución
+
+```
+========================================
+        BIENVENIDO A TECNOSTORE
+========================================
+1. Gestion de Celulares
+2. Gestion de Clientes
+3. Gestion de Ventas
+0. Salir
+========================================
+Opcion: 1
+
+=== MENU CELULARES ===
+1. Agregar celular
+2. Listar celulares
+3. Buscar celular por ID
+4. Actualizar celular
+5. Eliminar celular
+0. Volver
+Opcion: 2
+
+1 | Samsung Galaxy S23 | ALTA | SO: Android | $3500000.0 | Stock: 10
+2 | Apple iPhone 14 | ALTA | SO: iOS | $4200000.0 | Stock: 8
+3 | Xiaomi Redmi Note 12 | MEDIA | SO: Android | $1200000.0 | Stock: 15
+```
+
+---
+
+## 📄 Reporte generado
+
+Al seleccionar la opción **Generar reporte en archivo** desde el menú de ventas, se crea o actualiza el archivo `src/reportes/reporte_ventas.txt`:
+
+```
+========================================
+        REPORTE DE VENTAS TECNOSTORE
+========================================
+Venta ID    : 1
+Cliente     : Carlos Pérez
+Fecha       : 2026-06-05T10:30:00
+----------------------------------------
+  Celular   : Samsung Galaxy S23
+  Cantidad  : 2
+  Subtotal  : $7000000.0
+Total (IVA) : $8330000.0
+========================================
+```
+
+---
+
+## 🛠️ Requisitos
+
+- Java 17 o superior
+- NetBeans IDE
+- MySQL 8.x o conexión a BD en la nube
+- Conector JDBC: `mysql-connector-j-x.x.x.jar` agregado en Libraries del proyecto
+
+---
+
+## 👩‍💻 Desarrollado por
+
+**Maria Garcia**  
+Proyecto final — Curso Java Junior  
+2026
