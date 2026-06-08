@@ -15,21 +15,18 @@ import java.sql.SQLException;
 
 public class ConexionDB {
 
-    private static final String URL = System.getenv("DB_URL");
-    private static final String USER = System.getenv("DB_USER");
-    private static final String PASSWORD = System.getenv("DB_PASSWORD");
+    private static final String URL = "jdbc:mysql://mysql-8d7963c-maria36508-33ec.b.aivencloud.com:21698/tecnostore_db?ssl-mode=REQUIRED";
+    private static final String USER = "avnadmin";
+    private static final String PASSWORD = "AVNS_Pfy1WRtez6I7rJpjXaA";
 
     private static ConexionDB instancia;
     private Connection connection;
 
     private ConexionDB() {
         try {
-            if (URL == null || USER == null || PASSWORD == null) {
-                throw new IllegalStateException("Las variables de entorno DB_URL, DB_USER y DB_PASSWORD deben estar definidas.");
-            }
             this.connection = DriverManager.getConnection(URL, USER, PASSWORD);
             System.out.println("Conexion exitosa a la base de datos.");
-        } catch (SQLException | IllegalStateException e) {
+        } catch (SQLException e) {
             System.out.println("Error al conectar: " + e.getMessage());
         }
     }
